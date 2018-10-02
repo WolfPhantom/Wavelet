@@ -1,0 +1,279 @@
+from tkinter import * 
+from tkinter import filedialog as fd
+from tkinter import messagebox as ms
+import PIL 
+from PIL import ImageTk, Image
+import numpy as np
+b=np.zeros((8,8))
+H1=np.matrix([[1/2,0,0,0,1/2,0,0,0],
+             [1/2,0,0,0,-1/2,0,0,0],
+             [0,1/2,0,0,0,1/2,0,0],
+             [0,1/2,0,0,0,-1/2,0,0],
+             [0,0,1/2,0,0,0,1/2,0],
+             [0,0,1/2,0,0,0,-1/2,0],
+             [0,0,0,1/2,0,0,0,1/2],
+             [0,0,0,1/2,0,0,0,-1/2]])
+
+H2=np.matrix([[1/2,0,1/2,0,0,0,0,0],
+             [1/2,0,-1/2,0,0,0,0,0],
+             [0,1/2,0,1/2,0,0,0,0],
+             [0,1/2,0,-1/2,0,0,0,0],
+             [0,0,0,0,1,0,0,0],
+             [0,0,0,0,0,1,0,0],
+             [0,0,0,0,0,0,1,0],
+             [0,0,0,0,0,0,0,1]])
+
+H3=np.matrix([[1/2,1/2,0,0,0,0,0,0],
+             [1/2,-1/2,0,0,0,0,0,0],
+             [0,0,1,0,0,0,0,0],
+             [0,0,0,1,0,0,0,0],
+             [0,0,0,0,1,0,0,0],
+             [0,0,0,0,0,1,0,0],
+             [0,0,0,0,0,0,1,0],
+             [0,0,0,0,0,0,0,1]])
+
+H=H1*H2*H3
+H_T=H.T
+H_I=np.linalg.inv(H) 
+H_T_I=np.linalg.inv(H_T) 
+def Wavelet_1(A,filas,columnas,ratio):
+    a=A
+    i=0
+    while i <  columnas :#columnas
+        j = 0
+        while j <   filas:#filas
+            for f in range(8):
+                for c  in range(8):
+                    b[f,c]=a[f+j,c+i]
+        
+            d=H.T*b*H
+       
+            for A in range(8):
+                for B  in range(8):
+                    v=int(round(d[A,B],0))
+                    a[B+j,A+i]=v
+                    
+                
+        
+        #print(b)            
+            j+=8
+    
+        i+=8
+    
+    
+    #
+    #Comprension
+    #Revertir
+    i=0
+    Im=a
+    while i <  columnas :#columnas
+        j = 0
+        while j <   filas:#filas
+            if abs(Im[i,j])<=ratio:
+                a[i,j]=0
+                
+            j+=1
+        i+=1
+    
+    Im=a
+    i=0
+    while i <  columnas :#columnas
+        j = 0
+        while j <   filas:#filas
+            for f in range(8):
+                for c  in range(8):
+                    b[f,c]=Im[f+j,c+i]
+        
+            d=(H_T_I)*b*(H_I)
+       
+            for A in range(8):
+                for B  in range(8):
+                    v=int(round(d[A,B],0))
+                    a[B+j,A+i]=v
+                    
+                
+        
+            #print(b)            
+            j+=8
+    
+        i+=8
+    return a
+    
+def W_RGB(img,ratio):
+    ruta = (img )
+    im = Image.open(ruta)
+    #im.show()
+    #im = im.resize((720,720), Image.ANTIALIAS)
+    r=np.zeros((im.size[1],im.size[0]))
+    g=np.zeros((im.size[1],im.size[0]))
+    b=np.zeros((im.size[1],im.size[0]))
+    Im=np.array(im)
+    for i in range(im.size[1]):
+        for j in range(im.size[0]):
+            r[i,j]=Im[i,j,0]
+            g[i,j]=Im[i,j,1]
+            b[i,j]=Im[i,j,2]
+
+    #print(r)
+    #print(im.size)
+    r=Wavelet_1(r,im.size[0],im.size[1],ratio)
+    g=Wavelet_1(g,im.size[0],im.size[1],ratio)
+    b=Wavelet_1(b,im.size[0],im.size[1],ratio)
+    
+    #print(r
+    #Error al reacomodar los pixeles
+    for i in range(im.size[1]):
+        for j in range(im.size[0]):
+            red=int(r[i,j])
+            green=int(g[i,j])
+            blue=int(b[i,j])
+            im.putpixel((j,i),(red,green,blue,255))
+     
+    im.show()
+    
+def Wavelet(img,ratio):
+    ruta = (img )
+    im = Image.open(ruta)
+    #im.show()
+    im2=im
+    a=np.matrix(im)
+    #
+    i=0
+    while i <  im2.size[0] :#columnas
+        j = 0
+        while j <   im2.size[1]:#filas
+            for f in range(8):
+                for c  in range(8):
+                    b[f,c]=a[f+j,c+i]
+        
+            d=H.T*b*H
+       
+            for A in range(8):
+                for B  in range(8):
+                    v=int(round(d[A,B],0))
+                    im2.putpixel((B+i, A+j),v)
+                
+        
+        #print(b)            
+            j+=8
+    
+        i+=8
+    #
+    
+    i=0
+    Im=np.matrix(im2)
+    while i <  im2.size[0] :#columnas
+        j = 0
+        while j <   im2.size[1]:#filas
+            if abs(Im[i,j])<=ratio:
+                im2.putpixel((i, j),0)
+            j+=1
+        i+=1
+    
+    Im=np.matrix(im2)
+    i=0
+    while i <  im2.size[0] :#columnas
+        j = 0
+        while j <   im2.size[1]:#filas
+            for f in range(8):
+                for c  in range(8):
+                    b[f,c]=Im[f+j,c+i]
+        
+            d=(H_T_I)*b*(H_I)
+       
+            for A in range(8):
+                for B  in range(8):
+                    v=int(round(d[A,B],0))
+                    im2.putpixel((B+i, A+j),v)
+                
+        
+            #print(b)            
+            j+=8
+    
+        i+=8
+#
+    im2.show()
+
+class application:
+    def __init__(self,master):
+        
+        self.master = master
+        self.c_size = (700,500)
+        self.setup_gui(self.c_size)
+        self.img=None
+    def show_dat(self):
+        
+        print(RAD.get())
+    
+    def setup_gui(self,s):
+        
+        Label(self.master,text = 'Imagenes',pady=5,bg='white',
+            font=('Ubuntu',30)).pack()
+        ratio=Label(self.master,text = 'Ratio',pady=5,bg='white',
+            font=('Ubuntu',15)).place(x=250,y=48)
+        
+        self.e1 = Entry(self.master)
+        
+        self.e1.pack()
+        
+        self.canvas = Canvas(self.master,height=s[1],width=s[0],
+            bg='black',bd=10,relief='ridge')
+        self.canvas.pack()
+        txt = '''
+                  !
+            Sin Imagen
+        '''
+        self.wt = self.canvas.create_text(s[0]/2-270,s[1]/2,text=txt
+            ,font=('',30),fill='white')
+        f=Frame(self.master,bg='white',padx=10,pady=10)
+        Button(f,text='Abrir Imagen',bd=2,fg='white',bg='black',font=('',15)
+            ,command=self.make_image).pack(side=LEFT)
+        f.pack()
+        b=Frame(self.master,bg='white',padx=10,pady=10)
+        Button(f,text='Convertir',bd=2,fg='white',bg='black',font=('',15)
+            ,command=self.convert_image).pack(side=RIGHT)
+        b.pack()
+        self.status=Label(self.master,text = 'Direccion',bg='gray',
+            font=('Ubuntu',15),bd=2,fg='black',relief='sunken',anchor=W)
+        self.status.pack(side=BOTTOM,fill=X)
+ 
+ 
+    def make_image(self):
+        try:
+            File = fd.askopenfilename()
+            self.pilImage = Image.open(File)
+            re=self.pilImage.resize((700,500),Image.ANTIALIAS)
+            self.img = ImageTk.PhotoImage(re)
+            self.canvas.delete(ALL)
+            self.canvas.create_image(self.c_size[0]/2+10,self.c_size[1]/2+10,
+                anchor=CENTER,image=self.img)
+            self.status['text']=File
+        except:
+            ms.showerror('Error!','Tipo de archivo no soportado.')
+            
+    def convert_image(self):
+        
+        s=int(self.e1.get())
+        #print(s)
+     
+        im=np.array(self.pilImage)
+        
+        if im.ndim==2:
+            Wavelet(self.status['text'],s)
+        else:
+            W_RGB(self.status['text'],s)
+           
+       
+        
+        
+#Fin
+
+ 
+#Crear Ventana
+
+root=Tk()
+root.configure(bg='white')
+root.title('Visualizador de imagenes')
+application(root)
+root.resizable(0,0)
+root.mainloop()
